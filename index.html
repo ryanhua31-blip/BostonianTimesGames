@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bostonian Times Games</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="masthead">
+        <div class="masthead__top">
+          <p class="masthead__edition">Saturday Games Edition</p>
+          <p class="masthead__tag">Puzzles from the Bostonian Times newsroom</p>
+        </div>
+        <div class="masthead__brand-row">
+          <div>
+            <p class="masthead__section">Games</p>
+            <h1 class="masthead__brand">The Bostonian Times</h1>
+          </div>
+          <button id="replay-button" class="ghost-button" type="button">Replay</button>
+        </div>
+        <nav class="masthead__nav" aria-label="Games navigation">
+          <a href="#word-links" class="is-active">Word Links</a>
+          <a href="#how-to-play">How To Play</a>
+          <a href="#scoreboard">Score</a>
+        </nav>
+      </header>
+
+      <main class="content-grid">
+        <section class="hero-card">
+          <div class="hero-card__eyebrow">Today’s Puzzle</div>
+          <h2>Word Links</h2>
+          <p>
+            Build a chain across the board by crossing one matching letter at a
+            time, then extending the route with touching letters. Lower scores
+            are better.
+          </p>
+          <div class="hero-card__stats">
+            <div>
+              <span class="stat-label">Puzzle</span>
+              <strong id="puzzle-name">Morning Edition</strong>
+            </div>
+            <div>
+              <span class="stat-label">Score</span>
+              <strong id="score-value">0</strong>
+            </div>
+            <div>
+              <span class="stat-label">Words Added</span>
+              <strong id="words-added">0</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="board-card" id="word-links">
+          <div class="board-card__header">
+            <div>
+              <p class="section-kicker">Word Links</p>
+              <h3>Connect the starter words</h3>
+            </div>
+            <p id="status-pill" class="status-pill">Puzzle in progress</p>
+          </div>
+
+          <div class="board-layout">
+            <div class="board-wrap">
+              <div id="board" class="board" aria-label="15 by 15 Word Links grid"></div>
+            </div>
+
+            <aside class="control-panel">
+              <form id="word-form" class="entry-form">
+                <label>
+                  Word
+                  <input
+                    id="word-input"
+                    name="word"
+                    type="text"
+                    maxlength="15"
+                    autocomplete="off"
+                    placeholder="Enter a word"
+                    required
+                  />
+                </label>
+
+                <div class="entry-form__row">
+                  <label>
+                    Row
+                    <input id="row-input" name="row" type="number" min="1" max="15" required />
+                  </label>
+                  <label>
+                    Column
+                    <input id="col-input" name="col" type="number" min="1" max="15" required />
+                  </label>
+                </div>
+
+                <fieldset class="direction-picker">
+                  <legend>Direction</legend>
+                  <label>
+                    <input type="radio" name="direction" value="across" checked />
+                    Across
+                  </label>
+                  <label>
+                    <input type="radio" name="direction" value="down" />
+                    Down
+                  </label>
+                </fieldset>
+
+                <button class="primary-button" type="submit">Place Word</button>
+              </form>
+
+              <div class="message-box">
+                <p class="message-box__label">Move feedback</p>
+                <p id="message">Choose a square, enter a word, and place it across or down.</p>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="info-card" id="how-to-play">
+          <div class="info-card__header">
+            <p class="section-kicker">How To Play</p>
+            <h3>Rules for Bostonian Times Word Links</h3>
+          </div>
+          <ul class="rule-list">
+            <li>The board is a 15 by 15 grid with two starter words already placed.</li>
+            <li>Each new word must run horizontally or vertically.</li>
+            <li>Every move must overlap the existing board in exactly one matching letter.</li>
+            <li>The rest of the word extends the route, and touching letters continue the chain.</li>
+            <li>Each added word costs 10 points plus 1 point per letter.</li>
+            <li>Use the fewest, shortest words you can to build a connection.</li>
+            <li>Tap any square to prefill the row and column for your next move.</li>
+          </ul>
+        </section>
+
+        <section class="info-card" id="scoreboard">
+          <div class="info-card__header">
+            <p class="section-kicker">Scoreboard</p>
+            <h3>Your running total</h3>
+          </div>
+          <div class="score-card">
+            <p class="score-card__number" id="score-large">0</p>
+            <p class="score-card__copy">10 points per word plus 1 point per letter</p>
+          </div>
+          <div class="history">
+            <div class="history__head">
+              <h4>Move history</h4>
+              <p>Newest move first</p>
+            </div>
+            <ul id="history-list" class="history__list">
+              <li>No moves yet.</li>
+            </ul>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
