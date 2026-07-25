@@ -25,7 +25,7 @@ body {
     radial-gradient(circle at top, rgba(184, 137, 60, 0.15), transparent 32%),
     linear-gradient(180deg, #fbf8f2 0%, var(--paper) 42%, #efe6d8 100%);
   color: var(--ink);
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Helvetica, sans-serif;
 }
 
 button,
@@ -83,6 +83,29 @@ input {
   flex-wrap: wrap;
 }
 
+.masthead__stamp {
+  display: grid;
+  gap: 6px;
+  min-width: 190px;
+  padding: 14px 18px;
+  border: 1px solid rgba(24, 23, 22, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 250, 241, 0.78);
+  text-align: right;
+}
+
+.masthead__stamp span {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.masthead__stamp strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1rem;
+}
+
 .masthead__nav a {
   color: var(--muted);
   text-decoration: none;
@@ -136,10 +159,11 @@ input {
 .hero-card__stats {
   margin-top: 24px;
   align-items: stretch;
+  flex-wrap: wrap;
 }
 
 .hero-card__stats div {
-  flex: 1;
+  flex: 1 1 180px;
   padding: 16px;
   border-radius: 18px;
   background: var(--paper-deep);
@@ -398,6 +422,11 @@ input {
   .score-card {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .masthead__stamp {
+    width: 100%;
+    text-align: left;
   }
 
   .ghost-button,
