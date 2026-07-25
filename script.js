@@ -1,4 +1,28 @@
 const GRID_SIZE = 15;
+const STORAGE_KEY = "bostonian-times-word-links-progress-v2";
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+const WEEKDAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 
 const puzzles = [
   {
@@ -32,11 +56,11 @@ const state = {
   selectedCell: null,
   status: "playing",
   starterCells: { A: [], B: [] },
+  dateKey: "",
 };
 
 const boardEl = document.getElementById("board");
 const wordForm = document.getElementById("word-form");
-const replayButton = document.getElementById("replay-button");
 const wordInput = document.getElementById("word-input");
 const rowInput = document.getElementById("row-input");
 const colInput = document.getElementById("col-input");
@@ -47,6 +71,9 @@ const scoreLargeEl = document.getElementById("score-large");
 const wordsAddedEl = document.getElementById("words-added");
 const historyListEl = document.getElementById("history-list");
 const statusPillEl = document.getElementById("status-pill");
+const editionLabelEl = document.getElementById("edition-label");
+const challengeDateEl = document.getElementById("challenge-date");
+const heroDateEl = document.getElementById("hero-date");
 
 function createEmptyBoard() {
   return Array.from({ length: GRID_SIZE }, () =>
@@ -68,6 +95,36 @@ function isInBounds(cells) {
   );
 }
 
+function getTodayKey() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getDateParts(dateKey) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return { year, month, day };
+}
+
+function formatLongDate(dateKey) {
+  const { year, month, day } = getDateParts(dateKey);
+  return `${MONTH_NAMES[month - 1]} ${day}, ${year}`;
+}
+
+function formatEditionLabel(dateKey) {
+  const { year, month, day } = getDateParts(dateKey);
+  const weekday = WEEKDAY_NAMES[new Date(year, month - 1, day).getDay()];
+  return `${weekday} Games Edition`;
+}
+
+function getPuzzleIndexForDate(dateKey) {
+  const { year, month, day } = getDateParts(dateKey);
+  const dayNumber = Math.floor(Date.UTC(year, month - 1, day) / 86400000);
+  return ((dayNumber % puzzles.length) + puzzles.length) % puzzles.length;
+}
+
 function placeStarterWord(starter) {
   const cells = getCellsForWord(starter);
   cells.forEach(({ row, col, letter }) => {
@@ -87,36 +144,60 @@ function placeStarterWord(starter) {
   });
 }
 
-function pickNextPuzzleIndex() {
-  if (puzzles.length === 1) {
-    return 0;
-  }
-
-  let nextIndex = state.puzzleIndex;
-  while (nextIndex === state.puzzleIndex) {
-    nextIndex = Math.floor(Math.random() * puzzles.length);
-  }
-  return nextIndex;
+function setDailyLabels() {
+  const formattedDate = formatLongDate(state.dateKey);
+  editionLabelEl.textContent = formatEditionLabel(state.dateKey);
+  challengeDateEl.textContent = formattedDate;
+  heroDateEl.textContent = formattedDate;
 }
 
-function startPuzzle(nextIndex = state.puzzleIndex) {
-  state.puzzleIndex = nextIndex;
-  state.board = createEmptyBoard();
-  state.words = [];
-  state.score = 0;
-  state.selectedCell = null;
-  state.status = "playing";
-  state.starterCells = { A: [], B: [] };
+function setMessage(text, isSuccess = false) {
+  messageEl.textContent = text;
+  messageEl.classList.toggle("is-success", isSuccess);
+}
 
-  const puzzle = puzzles[state.puzzleIndex];
-  puzzle.starters.forEach(placeStarterWord);
+function setFormAvailability() {
+  const isComplete = state.status === "won";
+  Array.from(wordForm.elements).forEach((field) => {
+    field.disabled = isComplete;
+  });
+}
 
-  puzzleNameEl.textContent = puzzle.name;
-  setMessage("Starter words are placed. Build a chain across the board.");
-  updateScore();
-  updateHistory();
-  updateStatus();
-  renderBoard();
+function updateScore() {
+  scoreValueEl.textContent = String(state.score);
+  scoreLargeEl.textContent = String(state.score);
+  const addedWords = state.words.filter((word) => word.type === "placed").length;
+  wordsAddedEl.textContent = String(addedWords);
+}
+
+function updateHistory() {
+  const placedWords = state.words.filter((word) => word.type === "placed").slice().reverse();
+  historyListEl.innerHTML = "";
+
+  if (!placedWords.length) {
+    historyListEl.innerHTML = "<li>No moves yet.</li>";
+    return;
+  }
+
+  placedWords.forEach((entry) => {
+    const item = document.createElement("li");
+    item.textContent = `${entry.word} at row ${entry.row + 1}, column ${
+      entry.col + 1
+    } ${entry.direction} for ${entry.cost} points`;
+    historyListEl.appendChild(item);
+  });
+}
+
+function updateStatus() {
+  if (state.status === "won") {
+    statusPillEl.textContent = "Daily challenge complete";
+    statusPillEl.classList.add("is-success");
+  } else {
+    statusPillEl.textContent = "Daily challenge in progress";
+    statusPillEl.classList.remove("is-success");
+  }
+
+  setFormAvailability();
 }
 
 function renderBoard() {
@@ -159,6 +240,10 @@ function renderBoard() {
 }
 
 function selectCell(row, col) {
+  if (state.status === "won") {
+    return;
+  }
+
   state.selectedCell = { row, col };
   rowInput.value = row + 1;
   colInput.value = col + 1;
@@ -167,46 +252,6 @@ function selectCell(row, col) {
 
 function sanitizeWord(rawWord) {
   return rawWord.trim().toUpperCase().replace(/[^A-Z]/g, "");
-}
-
-function setMessage(text, isSuccess = false) {
-  messageEl.textContent = text;
-  messageEl.classList.toggle("is-success", isSuccess);
-}
-
-function updateScore() {
-  scoreValueEl.textContent = String(state.score);
-  scoreLargeEl.textContent = String(state.score);
-  const addedWords = state.words.filter((word) => word.type === "placed").length;
-  wordsAddedEl.textContent = String(addedWords);
-}
-
-function updateHistory() {
-  const placedWords = state.words.filter((word) => word.type === "placed").slice().reverse();
-  historyListEl.innerHTML = "";
-
-  if (!placedWords.length) {
-    historyListEl.innerHTML = "<li>No moves yet.</li>";
-    return;
-  }
-
-  placedWords.forEach((entry) => {
-    const item = document.createElement("li");
-    item.textContent = `${entry.word} at row ${entry.row + 1}, column ${
-      entry.col + 1
-    } ${entry.direction} for ${entry.cost} points`;
-    historyListEl.appendChild(item);
-  });
-}
-
-function updateStatus() {
-  if (state.status === "won") {
-    statusPillEl.textContent = "Connection complete";
-    statusPillEl.classList.add("is-success");
-  } else {
-    statusPillEl.textContent = "Puzzle in progress";
-    statusPillEl.classList.remove("is-success");
-  }
 }
 
 function validatePlacement(word, row, col, direction) {
@@ -326,6 +371,73 @@ function getConnectedRegionFromStarter(starterId) {
   return queue;
 }
 
+function readProgressStore() {
+  try {
+    return JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function writeProgressStore(store) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  } catch {
+    // Ignore storage failures and continue with the live board state.
+  }
+}
+
+function saveProgress() {
+  const store = readProgressStore();
+  const placedWords = state.words
+    .filter((word) => word.type === "placed")
+    .map(({ word, row, col, direction }) => ({
+      word,
+      row,
+      col,
+      direction,
+    }));
+
+  store[state.dateKey] = {
+    puzzleIndex: state.puzzleIndex,
+    status: state.status,
+    placedWords,
+  };
+
+  writeProgressStore(store);
+}
+
+function loadSavedProgress() {
+  const saved = readProgressStore()[state.dateKey];
+  if (!saved || saved.puzzleIndex !== state.puzzleIndex) {
+    return;
+  }
+
+  try {
+    saved.placedWords.forEach((entry) => {
+      const validation = validatePlacement(entry.word, entry.row, entry.col, entry.direction);
+      if (!validation.ok) {
+        throw new Error(validation.reason);
+      }
+      applyPlacement(entry.word, entry.row, entry.col, entry.direction, validation.cells);
+    });
+
+    state.status = saved.status === "won" ? "won" : "playing";
+  } catch {
+    const puzzle = puzzles[state.puzzleIndex];
+    state.board = createEmptyBoard();
+    state.words = [];
+    state.score = 0;
+    state.selectedCell = null;
+    state.status = "playing";
+    state.starterCells = { A: [], B: [] };
+    puzzle.starters.forEach(placeStarterWord);
+    const store = readProgressStore();
+    delete store[state.dateKey];
+    writeProgressStore(store);
+  }
+}
+
 function checkWin() {
   const regionA = getConnectedRegionFromStarter("A");
   const regionKeys = new Set(regionA.map(({ row, col }) => `${row},${col}`));
@@ -335,18 +447,54 @@ function checkWin() {
     state.status = "won";
     updateStatus();
     renderBoard();
-    setMessage("You connected the starter words. Replay to try a fresh puzzle.", true);
+    saveProgress();
+    setMessage("You completed today's daily challenge. Come back tomorrow for a new puzzle.", true);
     return true;
   }
 
   return false;
 }
 
+function startDailyPuzzle() {
+  state.dateKey = getTodayKey();
+  state.puzzleIndex = getPuzzleIndexForDate(state.dateKey);
+  state.board = createEmptyBoard();
+  state.words = [];
+  state.score = 0;
+  state.selectedCell = null;
+  state.status = "playing";
+  state.starterCells = { A: [], B: [] };
+
+  const puzzle = puzzles[state.puzzleIndex];
+  puzzle.starters.forEach(placeStarterWord);
+
+  puzzleNameEl.textContent = puzzle.name;
+  setDailyLabels();
+  loadSavedProgress();
+  updateScore();
+  updateHistory();
+  updateStatus();
+  renderBoard();
+
+  const placedWords = state.words.filter((word) => word.type === "placed").length;
+  if (state.status === "won") {
+    setMessage("You already solved today's daily challenge. Come back tomorrow for a new board.", true);
+    return;
+  }
+
+  if (placedWords > 0) {
+    setMessage("Welcome back. Today's daily challenge has been restored.");
+    return;
+  }
+
+  setMessage("Today's daily challenge is ready. Build a chain across the board.");
+}
+
 wordForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
   if (state.status === "won") {
-    setMessage("This puzzle is complete. Press Replay for a new board.");
+    setMessage("Today's puzzle is already complete. Come back tomorrow for a new challenge.");
     return;
   }
 
@@ -367,12 +515,13 @@ wordForm.addEventListener("submit", (event) => {
   }
 
   applyPlacement(word, row, col, direction, validation.cells);
+  saveProgress();
   updateScore();
   updateHistory();
   renderBoard();
 
   const moveCost = 10 + word.length;
-  setMessage(`Placed ${word} for ${moveCost} points. Keep linking the chain.`, true);
+  setMessage(`Placed ${word} for ${moveCost} points. Keep linking today's chain.`, true);
 
   wordForm.reset();
   rowInput.value = row + 1;
@@ -382,8 +531,4 @@ wordForm.addEventListener("submit", (event) => {
   checkWin();
 });
 
-replayButton.addEventListener("click", () => {
-  startPuzzle(pickNextPuzzleIndex());
-});
-
-startPuzzle(Math.floor(Math.random() * puzzles.length));
+startDailyPuzzle();
